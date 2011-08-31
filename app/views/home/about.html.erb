@@ -1,0 +1,68 @@
+<h1>Setting up Google Auth with OmniAuth and Rails 3.0.9</h1>
+<p>
+	Make sure you run this application on port 80 or Google will freakout. Also you should not run as localhost make a fake .local domain (e.g cw-rails.local)
+	<pre># hosts file
+127.0.0.1 cw-rails.local</pre>
+</p>
+
+<h2>Steps to setup google auth</h2>
+<ol>
+	<li>Add required gems to Gemfile
+		<pre># Gemfile
+gem 'omniauth'
+		
+group :development, :test do
+    gem 'mongrel', '1.2.0.pre2'
+    gem 'heroku'
+end</pre>
+	</li>
+	
+	<li>Generate Cert in terminal
+		<p>make sure you are already cd into your rails app root</p>
+		<pre>
+$ cd config
+$ openssl req -new -x509 -days 365 -out ca.crt
+$ cd ../</pre>
+	</li>
+	
+	<li>Create omniauth.rb in config/initializers
+		<pre># omniauth.rb
+Rails.application.config.middleware.use OmniAuth::Builder do
+    require 'openid/store/filesystem'
+    # load certificates
+    require "openid/fetchers"
+    OpenID.fetcher.ca_file = "#{Rails.root}/config/ca.crt"
+    # OpenID.fetcher.ca_file = "/usr/lib/ssl/certs/ca-certificates.crt" #Heroku
+			  
+    # Cheezburger.com authentication with google
+    provider :google_apps, OpenID::Store::Filesystem.new('/tmp'), :domain => 'cheezburger.com', :name => 'cheez'
+    # Standard google authentication
+    provider :openid, OpenID::Store::Filesystem.new('./tmp'), :name => 'google', :identifier => 'https://www.google.com/accounts/o8/id'
+end</pre>
+	</li>
+	
+	<li>Create home controller and index.html.erb view and remove index.html from public folder
+	<pre>rails g controller home</pre>
+	
+	
+	<pre># home_controller.rb
+def index
+    @auth = request.env["omniauth.auth"]
+end</pre>
+ 
+	<pre># index.html.erb
+&lt;%= link_to "Login with Cheezburger.com", "/auth/cheez" %&gt;
+&lt;%= link_to "Login with google", "/auth/google" %&gt;
+		
+&lt;div&gt;&lt;%= @auth %&gt;&lt;/div&gt;</pre>
+	</li>
+	
+	<li>Update config/routes.rb
+	<pre># routes.rb
+# This will route back to home after authentication
+match 'auth/:provider/callback' => 'home#index'
+	
+root :to => "home#index"</pre>
+	
+	</li>
+</ol>
