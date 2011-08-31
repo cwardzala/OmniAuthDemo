@@ -1,1 +1,5 @@
 == Demo of Google Auth with OmniAuth and Rails 3.0.9
+
+Run on port 80 for auth to work.
+
+Clone and view /about
